@@ -1,6 +1,5 @@
 import importlib
 import re
-import sys
 
 import pytest
 from coverage.config import CoverageConfig
@@ -94,7 +93,7 @@ def test_excludes_lines(configured, line):
         if re.search(reg, line):
             break
     else:
-        raise AssertionError('no regex matched {!r}'.format(line))
+        raise AssertionError(f'no regex matched {line!r}')
 
 
 def test_extends_existing_exclude_lines():
@@ -119,8 +118,4 @@ def test_coverage_init():
 
 def test_fix_coverage():
     """since we get imported as a coverage plugin -- need to re-scan module"""
-    if sys.version_info < (3,):  # pragma: no cover (py2)
-        import imp
-        imp.reload(covdefaults)
-    else:  # pragma: no cover (py3)
-        importlib.reload(covdefaults)
+    importlib.reload(covdefaults)

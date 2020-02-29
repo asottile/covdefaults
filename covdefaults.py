@@ -19,19 +19,9 @@ _ALL = (
 
 
 def _plat_impl_pragmas():  # type: () -> List[str]
-    if sys.version_info < (3,):  # pragma: no cover (py2)
-        if hasattr(sys, 'pypy_version_info'):
-            sys_implementation_name = 'pypy'
-        else:
-            sys_implementation_name = 'cpython'
-        sys_platform = 'linux' if sys.platform == 'linux2' else sys.platform
-        tags = {os.name, sys_platform, sys_implementation_name}
-    else:  # pragma: no cover (py3)
-        tags = {os.name, sys.platform, sys.implementation.name}
-    ret = [
-        r'# pragma: {} cover\b'.format(tag) for tag in _ALL if tag not in tags
-    ]
-    ret.extend(r'# pragma: {} no cover\b'.format(tag) for tag in tags)
+    tags = {os.name, sys.platform, sys.implementation.name}
+    ret = [fr'# pragma: {tag} cover\b' for tag in _ALL if tag not in tags]
+    ret.extend(fr'# pragma: {tag} no cover\b' for tag in tags)
     return ret
 
 
@@ -60,16 +50,17 @@ EXTEND = (
             r'-> [\'"]?NoReturn[\'"]?:',
             # non-runnable code
             r'^if __name__ == [\'"]__main__[\'"]:$',
-        ] + _plat_impl_pragmas(),
+            *_plat_impl_pragmas(),
+        ],
     ),
 )
 
 
 class CovDefaults(CoveragePlugin):
-    def __init__(self, subtract_omit=''):  # type: (str) -> None
+    def __init__(self, subtract_omit: str = '') -> None:
         self._subtract_omit = subtract_omit.split()
 
-    def configure(self, config):  # type: (CoverageConfig) -> None
+    def configure(self, config: CoverageConfig) -> None:
         for k, v in OPTIONS:
             config.set_option(k, v)
         for k, v in EXTEND:
@@ -93,5 +84,5 @@ class CovDefaults(CoveragePlugin):
             config.set_option('report:fail_under', 100)
 
 
-def coverage_init(reg, options):  # type: (Plugins, Dict[str, str]) -> None
+def coverage_init(reg: Plugins, options: Dict[str, str]) -> None:
     reg.add_configurer(CovDefaults(**options))

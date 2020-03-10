@@ -68,7 +68,7 @@ def test_exclude_lines_does_not_include_defaults(configured):
 
 
 @pytest.mark.parametrize(
-    'line',
+    'src',
     (
         'if x:  # pragma: no cover\n',
         'if x:  # pragma: no cover (py38+)\n',
@@ -81,6 +81,7 @@ def test_exclude_lines_does_not_include_defaults(configured):
         'if False:\n',
         'if TYPE_CHECKING:\n',
         'def f(x: int) -> int: ...\n',
+        'def f(x: int) -> int:\n    ...\n',
         'def never_returns() -> NoReturn:\n',
         'def never_returns() -> "NoReturn":\n',
         "def never_returns() -> 'NoReturn':\n",
@@ -88,12 +89,12 @@ def test_exclude_lines_does_not_include_defaults(configured):
         "if __name__ == '__main__':\n",
     ),
 )
-def test_excludes_lines(configured, line):
+def test_excludes_lines(configured, src):
     for reg in configured.get_option('report:exclude_lines'):
-        if re.search(reg, line):
+        if any(re.search(reg, line) for line in src.splitlines()):
             break
     else:
-        raise AssertionError(f'no regex matched {line!r}')
+        raise AssertionError(f'no regex matched {src!r}')
 
 
 def test_extends_existing_exclude_lines():

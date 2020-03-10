@@ -47,6 +47,7 @@ EXTEND = (
             # typing-related code
             r'^if (False|TYPE_CHECKING):',
             r': \.\.\.$',
+            r'^ +\.\.\.$',
             r'-> [\'"]?NoReturn[\'"]?:',
             # non-runnable code
             r'^if __name__ == [\'"]__main__[\'"]:$',

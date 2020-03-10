@@ -70,6 +70,7 @@ exclude =
     # typing-related code
     ^if (False|TYPE_CHECKING):
     : \.\.\.$
+    ^ +\.\.\.$
     -> ['"]?NoReturn['"]?:
 
     # non-runnable code

@@ -57,7 +57,7 @@ omit =
 show_missing = True
 skip_covered = True
 fail_under = 100
-exclude =
+exclude_lines =
     # a more strict default pragma
     \# pragma: no cover\b
 

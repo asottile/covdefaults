@@ -1,5 +1,7 @@
 import importlib
+import os
 import re
+from pathlib import Path
 
 import pytest
 from coverage.config import CoverageConfig
@@ -33,7 +35,7 @@ def configured():
 
 def test_constant_options(configured):
     assert configured.get_option('run:branch') is True
-    assert configured.get_option('run:source') == ['.']
+    assert configured.get_option('run:source') == [os.getcwd()]
     assert configured.get_option('report:show_missing') is True
     assert configured.get_option('report:skip_covered') is True
     assert configured.get_option('report:fail_under') == 100
@@ -44,8 +46,9 @@ def test_extends_existing_omit():
     cfg.set_option('run:omit', ['pre_commit/resources/*'])
     configure(cfg)
     assert cfg.get_option('run:omit') == [
+        '*/.nox/*',
         '*/.tox/*',
-        '*/__main__.py',
+        '*/.venv*/*',
         '*/setup.py',
         '*/venv*/*',
         'pre_commit/resources/*',
@@ -56,7 +59,8 @@ def test_subtract_omit():
     cfg = CoverageConfig()
     covdefaults.CovDefaults(subtract_omit='*/.tox/*').configure(cfg)
     assert cfg.get_option('run:omit') == [
-        '*/__main__.py',
+        '*/.nox/*',
+        '*/.venv*/*',
         '*/setup.py',
         '*/venv*/*',
     ]
@@ -120,3 +124,24 @@ def test_coverage_init():
 def test_fix_coverage():
     """since we get imported as a coverage plugin -- need to re-scan module"""
     importlib.reload(covdefaults)
+
+
+def test_installed_package():
+    import easy_install  # module example
+    import coverage  # package example
+
+    cfg = CoverageConfig()
+    c = covdefaults.CovDefaults(installed_package='easy_install:. coverage')
+    c.configure(cfg)
+
+    assert dict(cfg.paths) == {
+        'easy_install': [
+            './easy_install',
+            str(Path(easy_install.__file__).with_suffix('.py')),
+        ],
+    }
+    assert cfg.source == [
+        str(Path(easy_install.__file__)),
+        str(Path(coverage.__file__).parent),
+        str(Path.cwd()),
+    ]

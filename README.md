@@ -46,10 +46,16 @@ branch = True
 source = .
 omit =
     */.tox/*
-    */__main__.py
+    */.nox/*
     */setup.py
     */venv*/*
+    */.venv*/*
 ```
+
+Note: if you enable installed packages the python environment folders
+(``.tox`, ``.nox`, ``.venv*``, ``venv*``) might not be added statically, but
+instead exploded for folders going into the python virtual environment
+to avoid excluding the installed packages path.
 
 ### `[coverage:report]`
 
@@ -140,6 +146,32 @@ omit =
 
 this will result in the `pre_commit/resources/*` being `omit`ted in addition
 to the defaults provided by `covdefaults`.
+
+```ini
+[covdefaults]
+subtract_omit = */.tox/*
+```
+
+this will result in `*/.tox/*` not being `omit`ted (`*/.tox/*` is among the
+defaults provided by `covdefaults`).
+
+#### coverage for installed libraries
+
+By default ``covdefaults`` assumes that you want to track coverage
+in your local source tree, code that is version controlled. For libraries
+it's better idea to detect coverage on your installed version, and map that
+back to the source files. You can enable tracking installed libraries via:
+
+```ini
+[coverage:covdefaults]
+installed_libraries = tox:src virtualenv:.
+```
+
+In this example we say we'll track the installed package/module tox that maps
+back to the source folder present at ``src``, and ``virtualenv`` that maps back
+to the source folder present at ``.``. Note the installed package/module must be
+present in either the ``platlib`` or ``purelib`` path of the virtual environment
+as specified by ``distutils`` ``install`` object.
 
 ```ini
 [covdefaults]

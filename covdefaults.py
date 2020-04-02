@@ -1,11 +1,9 @@
 import os
 import re
 import sys
-from distutils.dist import Distribution
+import sysconfig
 from typing import Dict
 from typing import List
-from typing import Optional
-from typing import Set
 
 from coverage import CoveragePlugin
 from coverage.config import CoverageConfig
@@ -68,49 +66,54 @@ class CovDefaults(CoveragePlugin):
         self._installed_package = self._parse_inst_pkg(installed_package)
 
     @staticmethod
-    def _parse_inst_pkg(installed_package: str) -> Dict[str, Optional[str]]:
-        result: Dict[str, Optional[str]] = {}
-        for entry in installed_package.split(' '):
+    def _parse_inst_pkg(installed_package: str) -> Dict[str, str]:
+        result: Dict[str, str] = {}
+        for entry in installed_package.split():
             if entry:
-                key, value = entry, None
+                key, value = entry, '.'
                 if entry.count(':') == 1:
                     key, value = entry.split(':')
                 result[key] = value
         return result
 
-    def configure(self, config: CoverageConfig) -> None:
-        self._set_source(config)
-        for opt_k, opt_v in OPTIONS:
-            config.set_option(opt_k, opt_v)
-        for k, v in EXTEND:
-            before = set(config.get_option(k) or ())
-            before.update(v)
-            config.set_option(k, sorted(before))
+    def _set_source(self, config: CoverageConfig) -> None:
+        if not isinstance(config, CoverageConfig):  # pragma: no cover
+            # https://github.com/nedbat/coveragepy/issues/967
+            config = config.config
+        source = []
+        if self._installed_package:
+            for path in {
+                sysconfig.get_paths()['platlib'],
+                sysconfig.get_paths()['purelib'],
+            }:
+                for pkg, dest in self._installed_package.items():
+                    base = os.path.join(path, pkg)
+                    for suffix in ('', '.py'):
+                        at = f'{base}{suffix}'
+                        if os.path.exists(at):
+                            source.append(at)
+                            if dest is not None:
+                                if os.path.isfile(at):
+                                    src_path = dest
+                                else:
+                                    src_path = os.path.join(dest, pkg)
+                                config.paths[pkg] = [src_path, at]
+        # set paths to map to cwd
+        # https://coverage.readthedocs.io/en/latest/config.html#paths
+        source.append(os.getcwd())
+        config.set_option('run:source', source)
 
-        self.fix_omit(config)
-
-        # remove DEFAULT_EXCLUDE, we add a more-strict casing
-        exclude = set(config.get_option('report:exclude_lines'))
-        exclude.difference_update(DEFAULT_EXCLUDE)
-        config.set_option('report:exclude_lines', sorted(exclude))
-
-        # fail_under: if they specify a value then honor it
-        if not config.get_option('report:fail_under'):
-            config.set_option('report:fail_under', 100)
-
-    def fix_omit(self, config: CoverageConfig) -> None:
-        # subtract omit settings if requested
+    def _fix_omit(self, config: CoverageConfig) -> None:
         omit = set(config.get_option('run:omit') or [])
         omit.add('*/setup.py')  # always ignore setup.py
+        omit.add('*/__main__.py')  # always ignore __main__.py
 
         # ignore common virtual environment folders, unless it's within source
         source = config.get_option('run:source')
-        sep, suf = os.sep, ['.py', '.pyc', '.pyo']
+        sep = os.sep
         for folder, is_prefix in (
                 ('.tox', False),
-                ('.nox', False),
                 ('venv', True),
-                ('.venv', True),
         ):
             matcher = re.compile(f'.*{re.escape(f"{sep}{folder}{sep}")}.*')
             for src in source:
@@ -122,13 +125,13 @@ class CovDefaults(CoveragePlugin):
                         level = sep.join(parts[:at])
                         child = parts[at]
                         for entry in os.listdir(level):
-                            if entry == child:  # dont' exclude children
+                            if entry == child:  # don't exclude children
                                 continue
                             pattern = f'*/{level}/{entry}'
                             if os.path.isdir(os.path.join(level, entry)):
                                 pattern += '/*'
                             else:
-                                if not any(entry.endswith(e) for e in suf):
+                                if not entry.endswith('.pyc'):
                                     continue
                             omit.add(pattern)
                     break
@@ -138,40 +141,24 @@ class CovDefaults(CoveragePlugin):
         omit.difference_update(self._subtract_omit)
         config.set_option('run:omit', sorted(omit))
 
-    def _set_source(self, config: CoverageConfig) -> None:
-        if not isinstance(config, CoverageConfig):  # pragma: no cover
-            # https://github.com/nedbat/coveragepy/issues/967
-            config = config.config
-        source = []
-        if self._installed_package:
-            for path in _get_install_paths():
-                for pkg, dest in self._installed_package.items():
-                    base = os.path.join(path, pkg)
-                    for suffix in ('', '.py'):
-                        at = f'{base}{suffix}'
-                        if os.path.exists(at):
-                            source.append(at)
-                            if dest is not None:
-                                src_path = os.path.join(dest, pkg)
-                                config.paths[pkg] = [src_path, at]
-        # set paths to map to cwd
-        # https://coverage.readthedocs.io/en/latest/config.html#paths
-        source.append(os.getcwd())
-        config.set_option('run:source', source)
+    def configure(self, config: CoverageConfig) -> None:
+        self._set_source(config)
+        for opt_k, opt_v in OPTIONS:
+            config.set_option(opt_k, opt_v)
+        for k, v in EXTEND:
+            before = set(config.get_option(k) or ())
+            before.update(v)
+            config.set_option(k, sorted(before))
+        self._fix_omit(config)
 
+        # remove DEFAULT_EXCLUDE, we add a more-strict casing
+        exclude = set(config.get_option('report:exclude_lines'))
+        exclude.difference_update(DEFAULT_EXCLUDE)
+        config.set_option('report:exclude_lines', sorted(exclude))
 
-def _get_install_paths() -> Set[str]:
-    # follow what virtualenv uses
-    distribution = Distribution({'script_args': '--no-user-cfg'})
-    # disable macOS static paths for framework
-    if hasattr(sys, '_framework'):  # pragma: no cover
-        sys._framework = None  # type:ignore # pragma: no cover
-    install = distribution.get_command_obj('install', create=True)
-    if install is None:  # pragma: no cover
-        return set()  # pragma: no cover
-    install.prefix = sys.prefix  # type:ignore
-    install.finalize_options()
-    return {install.install_platlib, install.install_purelib}  # type:ignore
+        # fail_under: if they specify a value then honor it
+        if not config.get_option('report:fail_under'):
+            config.set_option('report:fail_under', 100)
 
 
 def coverage_init(reg: Plugins, options: Dict[str, str]) -> None:

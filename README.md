@@ -46,16 +46,15 @@ branch = True
 source = .
 omit =
     */.tox/*
-    */.nox/*
+    */__main__.py
     */setup.py
     */venv*/*
-    */.venv*/*
 ```
 
-Note: if you enable installed packages the python environment folders
-(``.tox`, ``.nox`, ``.venv*``, ``venv*``) might not be added statically, but
-instead exploded for folders going into the python virtual environment
-to avoid excluding the installed packages path.
+Note: if you enable installed packages the python environment folders (`.tox`,
+`venv*`) might not be added like here, but instead exploded for folders going
+into the python virtual environment to avoid excluding the installed packages
+path.
 
 ### `[coverage:report]`
 
@@ -158,20 +157,20 @@ defaults provided by `covdefaults`).
 #### coverage for installed libraries
 
 By default ``covdefaults`` assumes that you want to track coverage
-in your local source tree, code that is version controlled. For libraries
-it's better idea to detect coverage on your installed version, and map that
-back to the source files. You can enable tracking installed libraries via:
+in your local source tree, code that is version controlled. To detect
+coverage on your installed version, and map that back to the source files.
+You can enable tracking installed libraries via:
 
 ```ini
 [coverage:covdefaults]
-installed_libraries = tox:src virtualenv:.
+installed_libraries = tox:src virtualenv
 ```
 
 In this example we say we'll track the installed package/module tox that maps
 back to the source folder present at ``src``, and ``virtualenv`` that maps back
 to the source folder present at ``.``. Note the installed package/module must be
 present in either the ``platlib`` or ``purelib`` path of the virtual environment
-as specified by ``distutils`` ``install`` object.
+as specified by ``sysconfig``.
 
 ```ini
 [covdefaults]
@@ -188,9 +187,6 @@ defaults provided by `covdefaults`).
 exclude_lines =
     ^if MYPY:$
 ```
-
-this will result in lines matching `^if MYPY:$` to additionally be excluded
-from coverage in addition to the defaults provided by `covdefaults`.
 
 #### `report:fail_under`
 

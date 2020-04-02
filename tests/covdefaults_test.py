@@ -1,7 +1,6 @@
 import importlib
 import os
 import re
-from pathlib import Path
 
 import pytest
 from coverage.config import CoverageConfig
@@ -46,9 +45,8 @@ def test_extends_existing_omit():
     cfg.set_option('run:omit', ['pre_commit/resources/*'])
     configure(cfg)
     assert cfg.get_option('run:omit') == [
-        '*/.nox/*',
         '*/.tox/*',
-        '*/.venv*/*',
+        '*/__main__.py',
         '*/setup.py',
         '*/venv*/*',
         'pre_commit/resources/*',
@@ -59,8 +57,7 @@ def test_subtract_omit():
     cfg = CoverageConfig()
     covdefaults.CovDefaults(subtract_omit='*/.tox/*').configure(cfg)
     assert cfg.get_option('run:omit') == [
-        '*/.nox/*',
-        '*/.venv*/*',
+        '*/__main__.py',
         '*/setup.py',
         '*/venv*/*',
     ]
@@ -127,21 +124,32 @@ def test_fix_coverage():
 
 
 def test_installed_package():
-    import easy_install  # module example
-    import coverage  # package example
+    import easy_install  # module example - map
+    import setuptools  # pkg example - map
+    import coverage  # package example - no map
 
     cfg = CoverageConfig()
-    c = covdefaults.CovDefaults(installed_package='easy_install:. coverage')
+    value = 'easy_install:src setuptools:src coverage'
+    c = covdefaults.CovDefaults(installed_package=value)
     c.configure(cfg)
 
     assert dict(cfg.paths) == {
         'easy_install': [
-            './easy_install',
-            str(Path(easy_install.__file__).with_suffix('.py')),
+            'src',
+            easy_install.__file__,
+        ],
+        'setuptools': [
+            'src/setuptools',
+            os.path.dirname(setuptools.__file__),
+        ],
+        'coverage': [
+            './coverage',
+            os.path.dirname(coverage.__file__),
         ],
     }
     assert cfg.source == [
-        str(Path(easy_install.__file__)),
-        str(Path(coverage.__file__).parent),
-        str(Path.cwd()),
+        easy_install.__file__,
+        os.path.dirname(setuptools.__file__),
+        os.path.dirname(coverage.__file__),
+        os.getcwd(),
     ]

@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import sysconfig
+from collections import OrderedDict
 from typing import Dict
 from typing import List
 
@@ -69,39 +70,64 @@ class CovDefaults(CoveragePlugin):
     def _parse_inst_pkg(installed_package: str) -> Dict[str, str]:
         result: Dict[str, str] = {}
         for entry in installed_package.split():
-            if entry:
-                key, value = entry, '.'
-                if entry.count(':') == 1:
-                    key, value = entry.split(':')
-                result[key] = value
+            key, value = entry, '.'
+            if entry.count(':') == 1:
+                key, value = entry.split(':')
+            result[key] = value
         return result
 
     def _set_source(self, config: CoverageConfig) -> None:
-        if not isinstance(config, CoverageConfig):  # pragma: no cover
-            # https://github.com/nedbat/coveragepy/issues/967
-            config = config.config
+        # set source to either:
+        # - cwd
+        # - installed pkg within purelib/platlib, these map back to src tree
+        # https://coverage.readthedocs.io/en/latest/config.html#paths
         source = []
+        paths = config.get_option('paths')
         if self._installed_package:
-            for path in {
+            search_packages = list({
                 sysconfig.get_paths()['platlib'],
                 sysconfig.get_paths()['purelib'],
-            }:
-                for pkg, dest in self._installed_package.items():
+            })
+            for pkg, dest in self._installed_package.items():
+                found = False
+                # also check in dest in case this is a develop install
+                possible_dir = search_packages + [os.path.abspath(dest)]
+                poss_dir_ord = list(
+                    OrderedDict(
+                        (i, None) for i in sys.path if i in possible_dir
+                    ).keys(),
+                )
+                for path in poss_dir_ord:
                     base = os.path.join(path, pkg)
                     for suffix in ('', '.py'):
                         at = f'{base}{suffix}'
                         if os.path.exists(at):
                             source.append(at)
-                            if dest is not None:
-                                if os.path.isfile(at):
-                                    src_path = dest
-                                else:
-                                    src_path = os.path.join(dest, pkg)
-                                config.paths[pkg] = [src_path, at]
-        # set paths to map to cwd
-        # https://coverage.readthedocs.io/en/latest/config.html#paths
+                            if os.path.isfile(at):
+                                src_path = dest
+                            else:
+                                src_path = os.path.join(dest, pkg)
+                            if not os.path.exists(src_path):
+                                raise RuntimeError(
+                                    'source path {} for {} does not exists'
+                                    ''.format(
+                                        src_path,
+                                        at,
+                                    ),
+                                )
+                            paths[pkg] = [src_path, at]
+                            found = True
+                            break
+                    if found:
+                        break
+                if not found:
+                    raise RuntimeError(
+                        f'could not find installed package {pkg}',
+                    )
+
         source.append(os.getcwd())
         config.set_option('run:source', source)
+        config.set_option('paths', paths)
 
     def _fix_omit(self, config: CoverageConfig) -> None:
         omit = set(config.get_option('run:omit') or [])
@@ -131,7 +157,7 @@ class CovDefaults(CoveragePlugin):
                             if os.path.isdir(os.path.join(level, entry)):
                                 pattern += '/*'
                             else:
-                                if not entry.endswith('.pyc'):
+                                if not entry.endswith('.py'):
                                     continue
                             omit.add(pattern)
                     break

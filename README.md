@@ -188,6 +188,9 @@ exclude_lines =
     ^if MYPY:$
 ```
 
+this will result in lines matching `^if MYPY:$` to additionally be excluded
+from coverage in addition to the defaults provided by `covdefaults`.
+
 #### `report:fail_under`
 
 ```ini

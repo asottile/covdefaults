@@ -123,33 +123,54 @@ def test_fix_coverage():
     importlib.reload(covdefaults)
 
 
-def test_installed_package():
-    import easy_install  # module example - map
+def test_installed_package(tmp_path, monkeypatch):
+    root = os.path.dirname(os.path.dirname(__file__))
+    monkeypatch.chdir(root)
     import setuptools  # pkg example - map
-    import coverage  # package example - no map
 
     cfg = CoverageConfig()
-    value = 'easy_install:src setuptools:src coverage'
+    setuptools_src = (tmp_path / 'setuptools')
+    setuptools_src.mkdir()
+    value = 'covdefaults setuptools:{}' \
+            ''.format(setuptools_src.parent)
     c = covdefaults.CovDefaults(installed_package=value)
     c.configure(cfg)
-
-    assert dict(cfg.paths) == {
-        'easy_install': [
-            'src',
-            easy_install.__file__,
-        ],
-        'setuptools': [
-            'src/setuptools',
-            os.path.dirname(setuptools.__file__),
-        ],
-        'coverage': [
-            './coverage',
-            os.path.dirname(coverage.__file__),
-        ],
-    }
-    assert cfg.source == [
-        easy_install.__file__,
-        os.path.dirname(setuptools.__file__),
-        os.path.dirname(coverage.__file__),
+    setuptools_dir = os.path.dirname(setuptools.__file__)
+    cov_defaults = covdefaults.__file__
+    exp_source = [
+        cov_defaults,
+        setuptools_dir,
         os.getcwd(),
     ]
+    assert cfg.source == exp_source
+    exp_paths = {
+        'covdefaults': ['.', cov_defaults],
+        'setuptools': [
+            str(setuptools_src),
+            os.path.dirname(setuptools.__file__),
+        ],
+    }
+    assert dict(cfg.paths) == exp_paths
+
+
+def test_installed_package_missing_pkg():
+    cfg = CoverageConfig()
+    value = 'missing'
+    c = covdefaults.CovDefaults(installed_package=value)
+    with pytest.raises(
+            RuntimeError,
+            match='could not find installed package missing',
+    ):
+        c.configure(cfg)
+
+
+def test_installed_package_missing_src():
+    cfg = CoverageConfig()
+    value = 'coverage:this-does-not-exists'
+
+    c = covdefaults.CovDefaults(installed_package=value)
+    with pytest.raises(
+        RuntimeError,
+        match='source path .* for .* does not exists',
+    ):
+        c.configure(cfg)

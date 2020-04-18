@@ -1,8 +1,6 @@
 import os
-import re
 import sys
 import sysconfig
-from collections import OrderedDict
 from typing import Dict
 from typing import List
 
@@ -59,9 +57,9 @@ EXTEND = (
 
 class CovDefaults(CoveragePlugin):
     def __init__(
-        self,
-        subtract_omit: str = '',
-        installed_package: str = '',
+            self,
+            subtract_omit: str = '',
+            installed_package: str = '',
     ) -> None:
         self._subtract_omit = subtract_omit.split()
         self._installed_package = self._parse_inst_pkg(installed_package)
@@ -77,92 +75,35 @@ class CovDefaults(CoveragePlugin):
         return result
 
     def _set_source(self, config: CoverageConfig) -> None:
-        # set source to either:
-        # - cwd
-        # - installed pkg within purelib/platlib, these map back to src tree
-        # https://coverage.readthedocs.io/en/latest/config.html#paths
-        source = []
-        paths = config.get_option('paths')
         if self._installed_package:
-            search_packages = list({
-                sysconfig.get_paths()['platlib'],
-                sysconfig.get_paths()['purelib'],
-            })
-            for pkg, dest in self._installed_package.items():
-                found = False
-                # also check in dest in case this is a develop install
-                possible_dir = search_packages + [os.path.abspath(dest)]
-                poss_dir_ord = list(
-                    OrderedDict(
-                        (i, None) for i in sys.path if i in possible_dir
-                    ).keys(),
-                )
-                for path in poss_dir_ord:
-                    base = os.path.join(path, pkg)
-                    for suffix in ('', '.py'):
-                        at = f'{base}{suffix}'
-                        if os.path.exists(at):
-                            source.append(at)
-                            if os.path.isfile(at):
-                                src_path = dest
-                            else:
-                                src_path = os.path.join(dest, pkg)
-                            if not os.path.exists(src_path):
-                                raise RuntimeError(
-                                    'source path {} for {} does not exists'
-                                    ''.format(
-                                        src_path,
-                                        at,
-                                    ),
-                                )
-                            paths[pkg] = [src_path, at]
-                            found = True
-                            break
-                    if found:
-                        break
-                if not found:
-                    raise RuntimeError(
-                        f'could not find installed package {pkg}',
-                    )
-
-        source.append(os.getcwd())
-        config.set_option('run:source', source)
-        config.set_option('paths', paths)
+            source = set(self._installed_package)
+            configured_dirs = set(self._installed_package.values())
+            for path in os.listdir('.'):
+                if (
+                        (os.path.isdir(path) or path.endswith('.py')) and
+                        # replicate the `source = .` `omit=` setting
+                        path not in {'setup.py', '.tox'} and
+                        not path.startswith('venv') and
+                        path not in configured_dirs
+                ):
+                    source.add(path)
+            config.set_option('run:source', sorted(source))
+            sysconfig_paths = sysconfig.get_paths()
+            libdirs = {sysconfig_paths['platlib'], sysconfig_paths['purelib']}
+            paths = {
+                f'covdefaults_{pkg}': [dest, *libdirs]
+                for pkg, dest in self._installed_package.items()
+            }
+            config.set_option('paths', paths)
+        else:
+            config.set_option('run:source', [os.getcwd()])
 
     def _fix_omit(self, config: CoverageConfig) -> None:
         omit = set(config.get_option('run:omit') or [])
-        omit.add('*/setup.py')  # always ignore setup.py
-        omit.add('*/__main__.py')  # always ignore __main__.py
+        omit.update(('*/setup.py', '*/__main__.py'))
 
-        # ignore common virtual environment folders, unless it's within source
-        source = config.get_option('run:source')
-        sep = os.sep
-        for folder, is_prefix in (
-                ('.tox', False),
-                ('venv', True),
-        ):
-            matcher = re.compile(f'.*{re.escape(f"{sep}{folder}{sep}")}.*')
-            for src in source:
-                if matcher.match(src) is not None:
-                    # now we can't cover this with one omit,
-                    # climb the tree and exclude everything else
-                    parts = os.path.relpath(src, os.getcwd()).split(sep)
-                    for at in range(1, len(parts)):
-                        level = sep.join(parts[:at])
-                        child = parts[at]
-                        for entry in os.listdir(level):
-                            if entry == child:  # don't exclude children
-                                continue
-                            pattern = f'*/{level}/{entry}'
-                            if os.path.isdir(os.path.join(level, entry)):
-                                pattern += '/*'
-                            else:
-                                if not entry.endswith('.py'):
-                                    continue
-                            omit.add(pattern)
-                    break
-            else:  # blank omit any such folders
-                omit.add(f'*/{folder}{"*" if is_prefix else ""}/*')
+        if not self._installed_package:
+            omit.update(('*/.tox/*', '*/venv*/*'))
 
         omit.difference_update(self._subtract_omit)
         config.set_option('run:omit', sorted(omit))

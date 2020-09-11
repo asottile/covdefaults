@@ -82,6 +82,8 @@ def test_exclude_lines_does_not_include_defaults(configured):
         'if TYPE_CHECKING:\n',
         'def f(x: int) -> int: ...\n',
         'def f(x: int) -> int:\n    ...\n',
+        'def f(x: int) -> C: ...# noqa: F821\n',
+        'def f(x: int) -> C: ...  # noqa: F821\n',
         'def never_returns() -> NoReturn:\n',
         'def never_returns() -> "NoReturn":\n',
         "def never_returns() -> 'NoReturn':\n",

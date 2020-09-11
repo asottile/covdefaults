@@ -69,7 +69,7 @@ exclude_lines =
 
     # typing-related code
     ^if (False|TYPE_CHECKING):
-    : \.\.\.$
+    : \.\.\.(\s*#.*)?$
     ^ +\.\.\.$
     -> ['"]?NoReturn['"]?:
 

@@ -46,7 +46,7 @@ EXTEND = (
             r'^\s*raise$',
             # typing-related code
             r'^if (False|TYPE_CHECKING):',
-            r': \.\.\.$',
+            r': \.\.\.(\s*#.*)?$',
             r'^ +\.\.\.$',
             r'-> [\'"]?NoReturn[\'"]?:',
             # non-runnable code

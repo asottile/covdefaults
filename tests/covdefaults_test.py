@@ -39,6 +39,13 @@ def test_constant_options(configured):
     assert configured.get_option('report:fail_under') == 100
 
 
+def test_source_already_set():
+    cfg = CoverageConfig()
+    cfg.set_option('run:source', ['/tmp/foo'])
+    configure(cfg)
+    assert cfg.get_option('run:source') == ['/tmp/foo']
+
+
 def test_extends_existing_omit():
     cfg = CoverageConfig()
     cfg.set_option('run:omit', ['pre_commit/resources/*'])

@@ -1,7 +1,9 @@
 import os
 import sys
+from typing import Any
 from typing import Dict
 from typing import List
+from typing import Tuple
 
 from coverage import CoveragePlugin
 from coverage.config import CoverageConfig
@@ -25,9 +27,8 @@ def _plat_impl_pragmas():  # type: () -> List[str]
     return ret
 
 
-OPTIONS = (
+OPTIONS: Tuple[Tuple[str, Any], ...] = (
     ('run:branch', True),
-    ('run:source', ['.']),
 
     ('report:show_missing', True),
     ('report:skip_covered', True),
@@ -64,6 +65,8 @@ class CovDefaults(CoveragePlugin):
     def configure(self, config: CoverageConfig) -> None:
         for k, v in OPTIONS:
             config.set_option(k, v)
+        if config.get_option('run:source') is None:
+            config.set_option('run:source', ['.'])
         for k, v in EXTEND:
             before = set(config.get_option(k) or ())
             before.update(v)

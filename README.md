@@ -149,6 +149,15 @@ subtract_omit = */.tox/*
 this will result in `*/.tox/*` not being `omit`ted (`*/.tox/*` is among the
 defaults provided by `covdefaults`).
 
+#### `run:source`
+
+```ini
+[run]
+source = $PWD
+```
+
+covdefaults will not override this value to `.` if it is set manually.
+
 #### `report:exclude_lines`
 
 ```ini

@@ -46,10 +46,8 @@ plugins = ["covdefaults"]
 branch = True
 source = .
 omit =
-    */.tox/*
     */__main__.py
     */setup.py
-    */venv*/*
 ```
 
 ### `[coverage:report]`
@@ -144,11 +142,11 @@ to the defaults provided by `covdefaults`.
 
 ```ini
 [covdefaults]
-subtract_omit = */.tox/*
+subtract_omit = */__main__.py
 ```
 
-this will result in `*/.tox/*` not being `omit`ted (`*/.tox/*` is among the
-defaults provided by `covdefaults`).
+this will result in `*/__main__.py` not being `omit`ted (`*/__main__.py` is
+among the defaults provided by `covdefaults`).
 
 #### `run:source`
 

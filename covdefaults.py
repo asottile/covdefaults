@@ -34,7 +34,7 @@ OPTIONS: Tuple[Tuple[str, Any], ...] = (
     ('report:skip_covered', True),
 )
 EXTEND = (
-    ('run:omit', ['*/.tox/*', '*/__main__.py', '*/setup.py', '*/venv*/*']),
+    ('run:omit', ['*/__main__.py', '*/setup.py']),
     (
         'report:exclude_lines',
         [

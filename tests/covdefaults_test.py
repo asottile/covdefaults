@@ -51,21 +51,17 @@ def test_extends_existing_omit():
     cfg.set_option('run:omit', ['pre_commit/resources/*'])
     configure(cfg)
     assert cfg.get_option('run:omit') == [
-        '*/.tox/*',
         '*/__main__.py',
         '*/setup.py',
-        '*/venv*/*',
         'pre_commit/resources/*',
     ]
 
 
 def test_subtract_omit():
     cfg = CoverageConfig()
-    covdefaults.CovDefaults(subtract_omit='*/.tox/*').configure(cfg)
+    covdefaults.CovDefaults(subtract_omit='*/__main__.py').configure(cfg)
     assert cfg.get_option('run:omit') == [
-        '*/__main__.py',
         '*/setup.py',
-        '*/venv*/*',
     ]
 
 

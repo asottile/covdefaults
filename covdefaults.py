@@ -20,7 +20,7 @@ _ALL = (
 )
 
 
-def _plat_impl_pragmas():  # type: () -> List[str]
+def _plat_impl_pragmas() -> List[str]:
     tags = {os.name, sys.platform, sys.implementation.name}
     ret = [fr'# pragma: {tag} cover\b' for tag in _ALL if tag not in tags]
     ret.extend(fr'# pragma: {tag} no cover\b' for tag in tags)

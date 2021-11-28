@@ -27,6 +27,54 @@ def _plat_impl_pragmas() -> List[str]:
     return ret
 
 
+def _lt(n: int) -> str:
+    n_s = str(n)
+    digit = r'\d'
+
+    parts = [
+        f'{n_s[:i]}[0-{int(n_s[i]) - 1}]{len(n_s[i + 1:]) * digit}'
+        for i in range(len(n_s))
+        if n_s[i] != '0'
+    ]
+    if len(n_s) > 1:
+        parts.append(f'{digit}{{1,{len(n_s) - 1}}}')
+
+    return f'({"|".join(parts)})'
+
+
+def _gt(n: int) -> str:
+    n_s = str(n)
+    digit = r'\d'
+
+    parts = [
+        f'{n_s[:i]}[{int(n_s[i]) + 1}-9]{len(n_s[i + 1:]) * digit}'
+        for i in range(len(n_s))
+        if n_s[i] != '9'
+    ]
+    parts.append(f'{digit}{{{len(n_s) + 1},}}')
+
+    return f'({"|".join(parts)})'
+
+
+def _version_pragmas(
+        major: int = sys.version_info[0],
+        minor: int = sys.version_info[1],
+) -> List[str]:
+    return [
+        # <
+        fr'# pragma: <=?{_lt(major)}\.\d+ cover\b',
+        fr'# pragma: <=?{major}\.{_lt(minor)} cover\b',
+        fr'# pragma: <{major}\.{minor} cover\b',
+        # >
+        fr'# pragma: >=?{_gt(major)}\.\d+ cover\b',
+        fr'# pragma: >=?{major}\.{_gt(minor)} cover\b',
+        fr'# pragma: >{major}\.{minor} cover\b',
+        # != / ==
+        fr'# pragma: !={major}\.{minor} cover\b',
+        fr'# pragma: ==(?!{major}\.{minor})\d+\.\d+ cover\b',
+    ]
+
+
 OPTIONS: Tuple[Tuple[str, Any], ...] = (
     ('run:branch', True),
 
@@ -53,6 +101,15 @@ EXTEND = (
             # non-runnable code
             r'^if __name__ == [\'"]__main__[\'"]:$',
             *_plat_impl_pragmas(),
+            *_version_pragmas(),
+        ],
+    ),
+    (
+        'report:partial_branches',
+        [
+            r'# pragma: no branch\b',
+            # version specific no cover
+            r'# pragma: (>=?|<=?|==|!=)\d+\.\d+ cover\b',
         ],
     ),
 )

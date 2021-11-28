@@ -24,6 +24,89 @@ def test_plat_impl_pragmas():
         assert (c, pragma, no, cover) == ('#', 'pragma:', 'no', r'cover\b'), s
 
 
+def _matches_version_pragma(major, minor, s):
+    regexes = covdefaults._version_pragmas(major, minor)
+    return any(re.match(reg, s) for reg in regexes)
+
+
+@pytest.mark.parametrize(
+    ('s', 'expected'),
+    (
+        # <
+        ('# pragma: <2.7 cover', True),
+        ('# pragma: <3.6 cover', True),
+        ('# pragma: <3.7 cover', True),
+        ('# pragma: <3.8 cover', False),
+        ('# pragma: <3.10 cover', False),
+        # <=
+        ('# pragma: <=2.7 cover', True),
+        ('# pragma: <=3.6 cover', True),
+        ('# pragma: <=3.7 cover', False),
+        ('# pragma: <=3.8 cover', False),
+        ('# pragma: <=3.10 cover', False),
+        # >
+        ('# pragma: >2.7 cover', False),
+        ('# pragma: >3.6 cover', False),
+        ('# pragma: >3.7 cover', True),
+        ('# pragma: >3.8 cover', True),
+        ('# pragma: >3.10 cover', True),
+        # >=
+        ('# pragma: >=2.7 cover', False),
+        ('# pragma: >=3.6 cover', False),
+        ('# pragma: >=3.7 cover', False),
+        ('# pragma: >=3.8 cover', True),
+        ('# pragma: >=3.10 cover', True),
+        # ==
+        ('# pragma: ==3.6 cover', True),
+        ('# pragma: ==3.7 cover', False),
+        ('# pragma: ==3.8 cover', True),
+        # !=
+        ('# pragma: !=3.6 cover', False),
+        ('# pragma: !=3.7 cover', True),
+        ('# pragma: !=3.8 cover', False),
+    ),
+)
+def test_version_pragmas_py37(s, expected):
+    assert _matches_version_pragma(3, 7, s) == expected
+
+
+@pytest.mark.parametrize(
+    ('s', 'expected'),
+    (
+        # <
+        ('# pragma: <2.7 cover', True),
+        ('# pragma: <3.9 cover', True),
+        ('# pragma: <3.10 cover', True),
+        ('# pragma: <3.11 cover', False),
+        # <=
+        ('# pragma: <=2.7 cover', True),
+        ('# pragma: <=3.9 cover', True),
+        ('# pragma: <=3.10 cover', False),
+        ('# pragma: <=3.11 cover', False),
+        # >
+        ('# pragma: >2.7 cover', False),
+        ('# pragma: >3.9 cover', False),
+        ('# pragma: >3.10 cover', True),
+        ('# pragma: >3.11 cover', True),
+        # >=
+        ('# pragma: >=2.7 cover', False),
+        ('# pragma: >=3.9 cover', False),
+        ('# pragma: >=3.10 cover', False),
+        ('# pragma: >=3.11 cover', True),
+        # ==
+        ('# pragma: ==3.9 cover', True),
+        ('# pragma: ==3.10 cover', False),
+        ('# pragma: ==3.11 cover', True),
+        # !=
+        ('# pragma: !=3.9 cover', False),
+        ('# pragma: !=3.10 cover', True),
+        ('# pragma: !=3.11 cover', False),
+    ),
+)
+def test_version_pragmas_py310(s, expected):
+    assert _matches_version_pragma(3, 10, s) == expected
+
+
 @pytest.fixture
 def configured():
     cfg = CoverageConfig()
@@ -96,6 +179,26 @@ def test_exclude_lines_does_not_include_defaults(configured):
 )
 def test_excludes_lines(configured, src):
     for reg in configured.get_option('report:exclude_lines'):
+        if any(re.search(reg, line) for line in src.splitlines()):
+            break
+    else:
+        raise AssertionError(f'no regex matched {src!r}')
+
+
+@pytest.mark.parametrize(
+    'src',
+    (
+        'if True:  # pragma: no branch\n',
+        'if sys.version_info >= (3, 9):  # pragma: >=3.9 cover\n',
+        'if sys.version_info > (3, 9):  # pragma: >3.9 cover\n',
+        'if sys.version_info <= (3, 9):  # pragma: <=3.9 cover\n',
+        'if sys.version_info < (3, 9):  # pragma: <3.9 cover\n',
+        'if sys.version_info == (3, 9):  # pragma: ==3.9 cover\n',
+        'if sys.version_info != (3, 9):  # pragma: !=3.9 cover\n',
+    ),
+)
+def test_partial_branches(configured, src):
+    for reg in configured.get_option('report:partial_branches'):
         if any(re.search(reg, line) for line in src.splitlines()):
             break
     else:

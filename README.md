@@ -76,6 +76,13 @@ exclude_lines =
     if __name__ == ['"]__main__['"]:$
 
     # additional platform related pragmas (see below)
+    # additional version related pragmas (see below)
+partial_branches =
+    # a more strict default pragma
+    \# pragma: no cover\b
+
+    # our version pragmas
+    \# pragma: (>=?|<=?|==|!=)\d+\.\d+ cover\b'
 ```
 
 ### platform specific `# pragma: no cover`
@@ -122,6 +129,28 @@ else:  # pragma: win32 no cover
 note here that `# pragma: win32 cover` will become a "no cover" for everything
 which is not `win32` -- whereas the `# pragma: win32 no cover` will be a
 "no cover" only on `win32`.
+
+### version specific `# pragma: no cover`
+
+several `# pragma: no cover` tags will be added automatically based on the
+platform and implementation.
+
+these will be in the form of:
+
+```python
+# pragma: >=#.# cover
+```
+
+where the comparison operator is one of `>`, `>=`, `<`, `<=`, `==`, `!=`
+
+for example:
+
+```python
+if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
+    print('3.9+')
+else:  # pragma: <3.9 cover
+    print('old')
+```
 
 ### overriding options
 

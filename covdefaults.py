@@ -108,6 +108,8 @@ EXTEND = (
         'report:partial_branches',
         [
             r'# pragma: no branch\b',
+            # platform specific no cover
+            fr'# pragma: ({"|".join(_ALL)}) (no )?cover\b',
             # version specific no cover
             r'# pragma: (>=?|<=?|==|!=)\d+\.\d+ cover\b',
         ],

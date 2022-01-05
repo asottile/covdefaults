@@ -81,8 +81,11 @@ partial_branches =
     # a more strict default pragma
     \# pragma: no cover\b
 
+    # out platform pragmas
+    \# pragma: (nt|posix|cygwin|darwin|linux|msys|win32|cpython|pypy) (no )?cover\b
+
     # our version pragmas
-    \# pragma: (>=?|<=?|==|!=)\d+\.\d+ cover\b'
+    \# pragma: (>=?|<=?|==|!=)\d+\.\d+ cover\b
 ```
 
 ### platform specific `# pragma: no cover`

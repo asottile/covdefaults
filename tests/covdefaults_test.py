@@ -189,6 +189,8 @@ def test_excludes_lines(configured, src):
     'src',
     (
         'if True:  # pragma: no branch\n',
+        'if sys.platform == "win32":  # pragma: win32 cover\n',
+        'if sys.platform != "win32":  # pragma: win32 no cover\n',
         'if sys.version_info >= (3, 9):  # pragma: >=3.9 cover\n',
         'if sys.version_info > (3, 9):  # pragma: >3.9 cover\n',
         'if sys.version_info <= (3, 9):  # pragma: <=3.9 cover\n',

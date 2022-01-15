@@ -1,9 +1,8 @@
+from __future__ import annotations
+
 import os
 import sys
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Tuple
 
 from coverage import CoveragePlugin
 from coverage.config import CoverageConfig
@@ -20,7 +19,7 @@ _ALL = (
 )
 
 
-def _plat_impl_pragmas() -> List[str]:
+def _plat_impl_pragmas() -> list[str]:
     tags = {os.name, sys.platform, sys.implementation.name}
     ret = [fr'# pragma: {tag} cover\b' for tag in _ALL if tag not in tags]
     ret.extend(fr'# pragma: {tag} no cover\b' for tag in tags)
@@ -59,7 +58,7 @@ def _gt(n: int) -> str:
 def _version_pragmas(
         major: int = sys.version_info[0],
         minor: int = sys.version_info[1],
-) -> List[str]:
+) -> list[str]:
     return [
         # <
         fr'# pragma: <=?{_lt(major)}\.\d+ cover\b',
@@ -75,7 +74,7 @@ def _version_pragmas(
     ]
 
 
-OPTIONS: Tuple[Tuple[str, Any], ...] = (
+OPTIONS: tuple[tuple[str, Any], ...] = (
     ('run:branch', True),
 
     ('report:show_missing', True),
@@ -147,5 +146,5 @@ class CovDefaults(CoveragePlugin):
             config.set_option('report:fail_under', 100)
 
 
-def coverage_init(reg: Plugins, options: Dict[str, str]) -> None:
+def coverage_init(reg: Plugins, options: dict[str, str]) -> None:
     reg.add_configurer(CovDefaults(**options))

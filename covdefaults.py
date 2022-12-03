@@ -93,7 +93,7 @@ EXTEND = (
             r'^\s*return NotImplemented\b',
             r'^\s*raise$',
             # typing-related code
-            r'^if (False|TYPE_CHECKING):',
+            r'^\s*if (False|TYPE_CHECKING):',
             r': \.\.\.(\s*#.*)?$',
             r'^ +\.\.\.$',
             r'-> [\'"]?NoReturn[\'"]?:',

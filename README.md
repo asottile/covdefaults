@@ -66,10 +66,10 @@ exclude_lines =
     ^\s*raise$
 
     # typing-related code
-    ^\s*if (False|TYPE_CHECKING):
+    ^\s*if (False|(typing\.)?TYPE_CHECKING):
     : \.\.\.(\s*#.*)?$
     ^ +\.\.\.$
-    -> ['"]?NoReturn['"]?:
+    -> ['"]?(typing\.)?NoReturn['"]?:
 
     # non-runnable code
     if __name__ == ['"]__main__['"]:$

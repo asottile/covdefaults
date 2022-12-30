@@ -93,10 +93,10 @@ EXTEND = (
             r'^\s*return NotImplemented\b',
             r'^\s*raise$',
             # typing-related code
-            r'^\s*if (False|TYPE_CHECKING):',
+            r'^\s*if (False|(typing\.)?TYPE_CHECKING):',
             r': \.\.\.(\s*#.*)?$',
             r'^ +\.\.\.$',
-            r'-> [\'"]?NoReturn[\'"]?:',
+            r'-> [\'"]?(typing\.)?NoReturn[\'"]?:',
             # non-runnable code
             r'^if __name__ == [\'"]__main__[\'"]:$',
             *_plat_impl_pragmas(),

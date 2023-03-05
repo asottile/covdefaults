@@ -170,6 +170,7 @@ def test_exclude_lines_does_not_include_defaults(configured):
         '    if False:\n',
         'if TYPE_CHECKING:\n',
         '    if TYPE_CHECKING:\n',
+        'assert_never(instance)',
         'def f(x: int) -> int: ...\n',
         'def f(x: int) -> int:\n    ...\n',
         'def f(x: int) -> C: ...# noqa: F821\n',

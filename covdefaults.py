@@ -97,6 +97,7 @@ EXTEND = (
             r': \.\.\.(\s*#.*)?$',
             r'^ +\.\.\.$',
             r'-> [\'"]?NoReturn[\'"]?:',
+            r'^\s*assert_never\b',
             # non-runnable code
             r'^if __name__ == [\'"]__main__[\'"]:$',
             *_plat_impl_pragmas(),

@@ -99,6 +99,7 @@ EXTEND = (
             r'-> [\'"]?NoReturn[\'"]?:',
             r'^\s*assert_never\b',
             # non-runnable code
+            r'^\s*@(?:abc\.)?(?:abstractmethod|abstractclassmethod|abstractstaticmethod|abstractproperty)$',
             r'^if __name__ == [\'"]__main__[\'"]:$',
             *_plat_impl_pragmas(),
             *_version_pragmas(),

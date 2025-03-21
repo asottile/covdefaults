@@ -226,6 +226,13 @@ def test_configure_keeps_existing_fail_under():
     assert cfg.get_option('report:fail_under') == 42
 
 
+def test_configure_keeps_existing_fail_under_zero():
+    cfg = CoverageConfig()
+    cfg.set_option('report:fail_under', 0)
+    configure(cfg)
+    assert cfg.get_option('report:fail_under') == 0
+
+
 def test_coverage_init():
     cfg = CoverageConfig()
     plugin_manager = Plugins.load_plugins(['covdefaults'], cfg)

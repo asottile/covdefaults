@@ -143,7 +143,7 @@ class CovDefaults(CoveragePlugin):
         config.set_option('report:exclude_lines', sorted(exclude))
 
         # fail_under: if they specify a value then honor it
-        if not config.get_option('report:fail_under'):
+        if config.get_option('report:fail_under') is not None:  # can be 0
             config.set_option('report:fail_under', 100)
 
 

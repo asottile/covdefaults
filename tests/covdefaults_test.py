@@ -228,7 +228,8 @@ def test_configure_keeps_existing_fail_under():
 
 def test_coverage_init():
     cfg = CoverageConfig()
-    plugin_manager = Plugins.load_plugins(['covdefaults'], cfg)
+    plugin_manager = Plugins()
+    plugin_manager.load_from_config(['covdefaults'], cfg)
     assert plugin_manager.get('covdefaults.CovDefaults')
 
 

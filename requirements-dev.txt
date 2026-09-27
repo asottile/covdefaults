@@ -1,2 +1,2 @@
-coverage
+coverage>=7.7.0
 pytest
